@@ -9,7 +9,7 @@ from data.portfolio import get_portfolio_daily_returns
 def render():
     freq = st.radio("Frequency", ["Daily", "Weekly"], horizontal=True, key="returns_freq")
 
-    returns = get_portfolio_daily_returns(period="1y")
+    returns = get_portfolio_daily_returns(st.session_state["user_id"], period="1y")
     if returns.empty:
         st.info("Not enough data to display returns.")
         return

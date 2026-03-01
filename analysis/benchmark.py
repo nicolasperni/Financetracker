@@ -14,7 +14,7 @@ def render():
         key="benchmark_period",
     )
 
-    twr = get_time_weighted_return(period=period)
+    twr = get_time_weighted_return(st.session_state["user_id"], period=period)
     if twr.empty:
         st.info("No portfolio history available yet.")
         return

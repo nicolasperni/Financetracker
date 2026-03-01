@@ -2,14 +2,14 @@ import pandas as pd
 from db.models import get_transactions
 
 
-def compute_holdings() -> pd.DataFrame:
+def compute_holdings(user_id: int) -> pd.DataFrame:
     """Compute current holdings from all transactions.
 
     Returns DataFrame with columns:
         ticker, total_shares, avg_cost_basis, total_invested
     Only tickers with net shares > 0 are included.
     """
-    txns = get_transactions()
+    txns = get_transactions(user_id)
     if txns.empty:
         return pd.DataFrame(columns=["ticker", "total_shares", "avg_cost_basis", "total_invested"])
 

@@ -8,7 +8,7 @@ from db.models import get_distinct_tickers
 
 @register("Individual Stock Performance", description="Normalized return comparison across holdings", order=30)
 def render():
-    tickers = get_distinct_tickers()
+    tickers = get_distinct_tickers(st.session_state["user_id"])
     if not tickers:
         st.info("No stocks in portfolio yet.")
         return

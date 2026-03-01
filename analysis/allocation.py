@@ -6,7 +6,7 @@ from data.portfolio import get_portfolio_summary
 
 @register("Portfolio Allocation", description="Current allocation by market value", order=10)
 def render():
-    summary = get_portfolio_summary()
+    summary = get_portfolio_summary(st.session_state["user_id"])
     if summary.empty:
         st.info("No holdings to display. Add some transactions first.")
         return

@@ -68,7 +68,7 @@ def run():
     st.caption("Monte Carlo simulation using Geometric Brownian Motion")
 
     # --- Current portfolio value ---
-    summary = get_portfolio_summary()
+    summary = get_portfolio_summary(st.session_state["user_id"])
     current_value = summary["market_value"].sum() if not summary.empty else 0.0
 
     # --- Configuration ---

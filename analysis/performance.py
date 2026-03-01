@@ -13,7 +13,7 @@ def render():
         key="perf_period",
     )
 
-    history = get_portfolio_value_history(period=period)
+    history = get_portfolio_value_history(st.session_state["user_id"], period=period)
     if history.empty:
         st.info("No portfolio history available yet.")
         return

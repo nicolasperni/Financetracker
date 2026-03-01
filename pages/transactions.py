@@ -36,10 +36,18 @@ def _to_est_hour(local_time: time, tz_label: str) -> float:
 
 
 def run():
+    user_id = st.session_state["user_id"]
     st.title("Transactions")
 
     # --- Add Transaction Form ---
     st.subheader("Add Transaction")
+
+    input_mode = st.radio(
+        "Input method",
+        ["Dollar Amount", "Number of Shares"],
+        horizontal=True,
+        key="add_input_mode",
+    )
 
     with st.form("add_txn", clear_on_submit=True):
         col1, col2, col3 = st.columns([2, 1, 2])
@@ -50,13 +58,25 @@ def run():
         col4, col5, col6 = st.columns([1, 1, 2])
         txn_time = col4.time_input("Time", value=time(12, 0))
         tz_label = col5.selectbox("Timezone", list(TIMEZONES.keys()), index=0)
-        amount = col6.number_input(
-            "Amount ($)",
-            min_value=0.01,
-            step=100.0,
-            format="%.2f",
-            help="Dollar amount invested. The share price at the specified date/time will be looked up automatically.",
-        )
+
+        if input_mode == "Dollar Amount":
+            amount = col6.number_input(
+                "Amount ($)",
+                min_value=0.01,
+                step=100.0,
+                format="%.2f",
+                help="Dollar amount invested. Shares will be calculated from the price at the specified date/time.",
+            )
+            num_shares = None
+        else:
+            num_shares = col6.number_input(
+                "Shares",
+                min_value=0.0001,
+                step=1.0,
+                format="%.4f",
+                help="Number of shares purchased. Total cost will be calculated from the price at the specified date/time.",
+            )
+            amount = None
 
         notes = st.text_input("Notes (optional)", placeholder="e.g. Quarterly DCA")
 
@@ -83,10 +103,16 @@ def run():
                 )
                 st.stop()
 
-            shares = amount / price
+            if input_mode == "Dollar Amount":
+                shares = amount / price
+                total = amount
+            else:
+                shares = num_shares
+                total = shares * price
 
             try:
                 txn_id = add_transaction(
+                    user_id=user_id,
                     ticker=ticker,
                     txn_type=txn_type,
                     shares=shares,
@@ -96,7 +122,7 @@ def run():
                 )
                 st.success(
                     f"Added {txn_type} of {shares:.4f} shares of {ticker} "
-                    f"at ${price:.2f}/share (${amount:,.2f} total)"
+                    f"at ${price:.2f}/share (${total:,.2f} total)"
                 )
                 st.rerun()
             except ValueError as e:
@@ -107,7 +133,7 @@ def run():
     # --- Transaction History ---
     st.subheader("Transaction History")
 
-    txns = get_transactions()
+    txns = get_transactions(user_id)
     if txns.empty:
         st.info("No transactions yet. Add your first one above.")
         return
@@ -176,10 +202,18 @@ def run():
 
     # Edit form
     if st.session_state.get("editing_id") == selected_id:
-        txn = get_transaction_by_id(selected_id)
+        txn = get_transaction_by_id(selected_id, user_id)
         if txn:
             st.write("---")
             st.write(f"**Editing transaction #{selected_id}**")
+
+            edit_mode = st.radio(
+                "Input method",
+                ["Dollar Amount", "Number of Shares"],
+                horizontal=True,
+                key="edit_input_mode",
+            )
+
             with st.form("edit_txn"):
                 col1, col2, col3 = st.columns([2, 1, 2])
                 new_ticker = col1.text_input("Ticker", value=txn["ticker"]).strip().upper()
@@ -189,10 +223,18 @@ def run():
                 col4, col5, col6 = st.columns([1, 1, 2])
                 new_time = col4.time_input("Time", value=time(12, 0))
                 new_tz_label = col5.selectbox("Timezone", list(TIMEZONES.keys()), index=0, key="edit_tz")
+
                 current_total = txn["shares"] * txn["price"]
-                new_amount = col6.number_input(
-                    "Amount ($)", value=round(current_total, 2), min_value=0.01, format="%.2f"
-                )
+                if edit_mode == "Dollar Amount":
+                    new_amount = col6.number_input(
+                        "Amount ($)", value=round(current_total, 2), min_value=0.01, format="%.2f"
+                    )
+                    new_num_shares = None
+                else:
+                    new_num_shares = col6.number_input(
+                        "Shares", value=round(txn["shares"], 4), min_value=0.0001, format="%.4f"
+                    )
+                    new_amount = None
 
                 new_notes = st.text_input("Notes", value=txn["notes"] or "")
 
@@ -210,11 +252,15 @@ def run():
                         st.error(f"Could not find a price for {new_ticker} on {new_date.isoformat()}.")
                         st.stop()
 
-                    new_shares = new_amount / new_price
+                    if edit_mode == "Dollar Amount":
+                        new_shares = new_amount / new_price
+                    else:
+                        new_shares = new_num_shares
 
                     try:
                         update_transaction(
                             selected_id,
+                            user_id,
                             ticker=new_ticker,
                             type=new_type,
                             shares=new_shares,
@@ -234,7 +280,7 @@ def run():
         col1, col2 = st.columns(2)
         if col1.button("Confirm Delete", type="primary"):
             try:
-                delete_transaction(selected_id)
+                delete_transaction(selected_id, user_id)
                 st.success("Transaction deleted.")
                 st.session_state.pop("deleting_id", None)
                 st.rerun()

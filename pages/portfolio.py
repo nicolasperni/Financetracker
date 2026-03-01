@@ -8,7 +8,7 @@ from utils.formatting import fmt_currency, fmt_pct
 def run():
     st.title("Portfolio Overview")
 
-    summary = get_portfolio_summary()
+    summary = get_portfolio_summary(st.session_state["user_id"])
 
     if summary.empty:
         st.info(

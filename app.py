@@ -11,13 +11,25 @@ st.set_page_config(
     layout="wide",
 )
 
-# Navigation
-pages = [
-    st.Page("pages/portfolio.py", title="Portfolio", icon=":material/account_balance:", default=True),
-    st.Page("pages/transactions.py", title="Transactions", icon=":material/receipt_long:"),
-    st.Page("pages/dashboard.py", title="Analysis", icon=":material/analytics:"),
-    st.Page("pages/projections.py", title="Projections", icon=":material/trending_up:"),
-]
+# Check authentication
+if "user_id" not in st.session_state:
+    # Not logged in — show auth page only
+    pg = st.navigation([st.Page("pages/auth.py", title="Login", icon=":material/login:")])
+    pg.run()
+else:
+    # Logged in — show app with logout in sidebar
+    with st.sidebar:
+        st.write(f"Signed in as **{st.session_state['username']}**")
+        if st.button("Sign Out", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
 
-pg = st.navigation(pages)
-pg.run()
+    pages = [
+        st.Page("pages/portfolio.py", title="Portfolio", icon=":material/account_balance:", default=True),
+        st.Page("pages/transactions.py", title="Transactions", icon=":material/receipt_long:"),
+        st.Page("pages/dashboard.py", title="Analysis", icon=":material/analytics:"),
+        st.Page("pages/projections.py", title="Projections", icon=":material/trending_up:"),
+    ]
+
+    pg = st.navigation(pages)
+    pg.run()
