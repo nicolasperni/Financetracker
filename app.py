@@ -9,6 +9,7 @@ st.set_page_config(
     page_title="Investment Tracker",
     page_icon="chart_with_upwards_trend",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 # Check authentication
