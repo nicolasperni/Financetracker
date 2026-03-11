@@ -63,8 +63,10 @@ def get_transactions(user_id: int, ticker=None, start_date=None, end_date=None) 
             query += " AND date <= ?"
             params.append(end_date)
         query += " ORDER BY date DESC, id DESC"
-        df = pd.read_sql_query(query, conn, params=params)
-        return df
+        rows = conn.execute(query, params).fetchall()
+        if not rows:
+            return pd.DataFrame()
+        return pd.DataFrame([dict(r) for r in rows])
     finally:
         conn.close()
 
